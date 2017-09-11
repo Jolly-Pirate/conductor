@@ -1,5 +1,6 @@
 # coding=utf-8
 import sys
+
 from setuptools import find_packages
 from setuptools import setup
 
@@ -7,7 +8,7 @@ assert sys.version_info[0] == 3 and sys.version_info[1] >= 5, "conductor require
 
 setup(
     name='conductor',
-    version='0.2.4',
+    version='0.3.1',
     description='Steem Witness Toolkit',
     long_description=open('README.rst').read(),
     packages=find_packages(),
@@ -18,11 +19,12 @@ setup(
     install_requires=[
         'Click',
         'click-spinner',
-        'steem',
         'tabulate',
-        # 'maya',
-        # 'toolz',
-        # 'funcy',
+        'requests',
+        'prettytable',
+    ],
+    dependency_links=[
+       'git+git://github.com/Netherdrake/steem-python'
     ],
     entry_points={
         'console_scripts': [

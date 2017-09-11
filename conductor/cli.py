@@ -43,9 +43,11 @@ context_settings = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(context_settings=context_settings)
-def conductor():
+@click.pass_context
+def conductor(ctx):
     """Steem Witness Toolkit."""
-    pass
+    if ctx.invoked_subcommand not in ['init', 'tickers', 'keygen']:
+        ensure_witness_hook()
 
 
 # Config Commands
@@ -120,8 +122,8 @@ def update():
     output('Witness %s Updated' % c['witness']['name'])
 
 
-@conductor.command(name='key-gen')
-def feed():
+@conductor.command(name='keygen')
+def keygen():
     """Generate a random signing key-pair."""
     pk, pub = generate_signing_key()
     t = PrettyTable(["Private (install on your witness node)",
@@ -158,11 +160,11 @@ def disable():
 
 
 @conductor.command(name='kill-switch')
-@click.option('--disable-after', '-n', default=10)
-@click.option('--second-key', '-k', default=None)
-def kill_switch(disable_after, second_key):
+@click.option('--disable-after', '-n', default=5)
+@click.option('--keys', '-k', default=None, multiple=True)
+def kill_switch(disable_after, keys):
     """Monitor for misses w/ disable."""
-    watchdog(disable_after, second_key)
+    watchdog(disable_after, keys)
 
 
 # Status Commands
@@ -177,7 +179,10 @@ def tickers():
             "SBD/USD": round(m.sbd_usd_implied(), 3),
             "STEEM/USD": round(m.steem_usd_implied(), 3),
         }
-    echo(tabulate(data.items(), headers=['Symbol', 'Price'], numalign="right", tablefmt='orgtbl'))
+    echo(tabulate(
+        data.items(),
+        headers=['Symbol', 'Price'],
+        numalign="right", tablefmt='orgtbl'))
 
 
 @conductor.command(name='status')
@@ -194,3 +199,17 @@ def status():
 
     output(t, 'Status')
     output(get_config(), 'Configuration')
+
+
+def ensure_witness_hook():
+    """ Ensure the config file exists. Sync witness props from steem."""
+    try:
+        c = get_config()
+        witness = get_witness(c['witness']['name'])
+        c['witness']['url'] = witness['url']
+        c['props'] = witness['props']
+        set_config(c)
+    except FileNotFoundError:
+        print("Your witness has not been setup yet. Please run:\n",
+              "conductor init")
+        quit(1)
